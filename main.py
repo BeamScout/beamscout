@@ -1,15 +1,16 @@
-from keras.models import Sequential,Model
+from keras.models import Model
 
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, BatchNormalization, Input, Reshape, Conv1D
 from keras.optimizers import Adam
+from keras import callbacks
 from keras.callbacks import ModelCheckpoint
+import tensorflow as tf
+from tensorflow.python.client import timeline
 from data_loader_2 import dataset
 import numpy as np
-import pandas as pd
 import random
 import time
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 # def vec_R_array(vec):
 
@@ -35,10 +36,13 @@ outputs = Dense(64)(model)
 model = Model(inputs=inputs, outputs=outputs)
 
 adam =  Adam(lr=0.0002, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=False)
-model.compile(loss='mse',optimizer=adam)
+callbacks_list = [callbacks.TensorBoard(log_dir='./logs', write_graph=True, write_images=False)]
+run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+run_metadata = tf.RunMetadata()
+model.compile(loss='mse',optimizer=adam,options=run_options,run_metadata=run_metadata)
 
 tick = time.time()
-for i in range(0,50):
+for i in range(0,10):
     #for a in [0,45]:
 
 
@@ -93,7 +97,13 @@ for i in range(0,50):
     #model.fit(train_data, train_label, validation_data=(test_data, test_label), epochs=50, batch_size=32,
     #          callbacks=[checkpoint],shuffle=True, verbose=0)
     model.fit(train_data, train_label, validation_data=(test_data, test_label), epochs=50, batch_size=32,
-           shuffle=True, verbose=0)
+           shuffle=True, verbose=0,callbacks=callbacks_list)
+
+    tl = timeline.Timeline(run_metadata.step_stats)
+    ctf = tl.generate_chrome_trace_format()
+    with open(str(a)+'_timeline.json', 'w') as f:
+        f.write(ctf)
+    print('timeline.json has been saved!')
     #model.load_weights('MLP.weights.best.hdf5')
 
     #data_list_all_label  长度
